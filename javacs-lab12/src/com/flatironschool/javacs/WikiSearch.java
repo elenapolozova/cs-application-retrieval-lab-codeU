@@ -8,6 +8,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.HashSet;
+import java.util.Set;
 
 import redis.clients.jedis.Jedis;
 
@@ -40,6 +42,10 @@ public class WikiSearch {
 		Integer relevance = map.get(url);
 		return relevance==null ? 0: relevance;
 	}
+
+	public Set<String> getURLs(){
+		return map.keySet();
+	}
 	
 	/**
 	 * Prints the contents in order of term frequency.
@@ -60,8 +66,16 @@ public class WikiSearch {
 	 * @return New WikiSearch object.
 	 */
 	public WikiSearch or(WikiSearch that) {
-        // FILL THIS IN!
-		return null;
+        HashMap<String, Integer> unionMap = new HashMap<String, Integer>(); // intitialize with current values
+        for (String url: map.keySet()){
+        		unionMap.put(url, map.get(url) + that.getRelevance(url));
+        } // add everything that's either in only "map" or in both
+        for (String url: that.getURLs()){
+        	if (!unionMap.containsKey(url)){
+        		unionMap.put(url, that.getRelevance(url));
+        	} // add terms that are only in "that"
+        }
+		return new WikiSearch(unionMap);
 	}
 	
 	/**
@@ -71,8 +85,13 @@ public class WikiSearch {
 	 * @return New WikiSearch object.
 	 */
 	public WikiSearch and(WikiSearch that) {
-        // FILL THIS IN!
-		return null;
+        HashMap<String, Integer> unionMap = new HashMap<String, Integer>(); // intitialize with current values
+        for (String url: map.keySet()){
+        	if (that.getRelevance(url) > 0){
+        		unionMap.put(url, map.get(url) + that.getRelevance(url));
+        	}
+        } // add everything that's either in only "map" or in both
+		return new WikiSearch(unionMap);
 	}
 	
 	/**
@@ -82,8 +101,13 @@ public class WikiSearch {
 	 * @return New WikiSearch object.
 	 */
 	public WikiSearch minus(WikiSearch that) {
-        // FILL THIS IN!
-		return null;
+        HashMap<String, Integer> unionMap = new HashMap<String, Integer>(); // intitialize with current values
+        for (String url: map.keySet()){
+        	if (that.getRelevance(url) == 0){
+        		unionMap.put(url, map.get(url));
+        	}
+        } // add everything that's either in only "map" or in both
+		return new WikiSearch(unionMap);
 	}
 	
 	/**
@@ -105,7 +129,27 @@ public class WikiSearch {
 	 */
 	public List<Entry<String, Integer>> sort() {
         // FILL THIS IN!
-		return null;
+        LinkedList<Entry<String, Integer>> sorted = new LinkedList<Entry<String, Integer>>();
+        Comparator<Entry<String, Integer>> byVal = new Comparator<Entry<String, Integer>>() {
+            @Override
+            public int compare(Entry<String, Integer> entry1, Entry<String, Integer> entry2) {
+                if (entry1.getValue() < entry2.getValue()) {
+                    return -1;
+                }
+                if (entry1.getValue() > entry2.getValue()) {
+                    return 1;
+                }
+                return 0; // if they're equal
+            }
+        };
+
+
+        for (Entry<String, Integer> e: map.entrySet()){
+        	sorted.add(e);
+        }
+        Collections.sort(sorted, byVal);
+		return sorted;
+
 	}
 
 	/**
